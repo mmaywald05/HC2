@@ -91,7 +91,7 @@ public class WavFileFactory {
     }
 
     public static float[] readWavFile(String filePath) throws IOException, UnsupportedAudioFileException, UnsupportedAudioFileException {
-        File file = new File("C:\\Users\\Morit\\HC2\\SoundFiles\\"+filePath);
+        File file = new File("/Users/maywald/IdeaProjects/HC2/SoundFiles/"+filePath);
         AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(file);
         AudioFormat format = audioInputStream.getFormat();
 
@@ -143,7 +143,7 @@ public class WavFileFactory {
 
     public static void writeFloatArrayToFile(float[] floatArray, String fileName) throws IOException {
         // Use try-with-resources to ensure that the BufferedWriter is closed properly
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter("C:\\Users\\Morit\\HC2\\Data\\"+fileName))) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("Data/"+fileName))) {
             for (float value : floatArray) {
                 writer.write(Float.toString(value));
                 writer.newLine();

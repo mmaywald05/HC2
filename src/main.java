@@ -11,13 +11,16 @@ public class main {
 
         System.out.println("Initializing sequential execution");
         long start_seq = System.currentTimeMillis();
+
         FFTFactory.DFT_SEQ(filePath, blockSize, offset, threshold);
+
         long end_seq = System.currentTimeMillis();
         long seqTime = end_seq - start_seq;
 
         System.out.println("Initializing parallel execution on cpu \n"
                 +   "Cores: " + cores
         );
+
         long start_cpu = System.currentTimeMillis();
         FFTFactory.DFT_PAR(filePath, blockSize, offset, threshold);
         long end_cpu = System.currentTimeMillis();

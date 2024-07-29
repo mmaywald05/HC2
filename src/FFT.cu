@@ -73,7 +73,7 @@ __device__ __host__ float complex_mag(const Complex& c) {
 }
 
 
-__global__ void mydftkernel(const Complex* input, float* magnitudes, int N, int k, int s, int numBlocks){
+__global__ void dftKernel(const Complex* input, float* magnitudes, int N, int k, int s, int numBlocks){
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     int startIndex = tid * s;
     int endIndex = startIndex + k;
@@ -103,7 +103,7 @@ void computeDFTBlocks(const Complex* h_input, float* h_magnitudes, int N, int k,
     cudaMemcpy(d_input, h_input, N * sizeof(Complex), cudaMemcpyHostToDevice);
     cudaMemset(d_magnitudes, 0, k * sizeof(float));
 
-    mydftkernel<<<1024, 1024>>>(d_input, d_magnitudes, N, k, s, numBlocks);
+    dftKernel<<<1024, 1024>>>(d_input, d_magnitudes, N, k, s, numBlocks);
     cudaDeviceSynchronize();
 
     cudaMemcpy(h_magnitudes, d_magnitudes, k * sizeof(float), cudaMemcpyDeviceToHost);
