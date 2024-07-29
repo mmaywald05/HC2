@@ -3,7 +3,7 @@ import java.util.concurrent.ExecutionException;
 
 public class main {
     public static void main(String[] args) throws ExecutionException, InterruptedException {
-        String filePath = "short210.wav";
+        String filePath = "monotone_f210_1sec.wav";
         int blockSize = 512;
         int offset = 64;
         double threshold = (0.0d);

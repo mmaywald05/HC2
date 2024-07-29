@@ -81,15 +81,23 @@ __global__ void dftKernel(const Complex* input, float* magnitudes, int N, int k,
         for(int i = startIndex; i < endIndex; ++i){
             Complex number = make_complex(0,0);
             for(int j = startIndex; j < endIndex; ++j){
-                double angle = 2 * M_PI * i * j / k;
+                double angle = 2 * M_PI * (i-startIndex) * (j-startIndex) / k;
                 Complex w = make_complex(cosf(angle), -sinf(angle));
                 Complex prod = complex_mul(input[j], w);
                 number = complex_add(number, prod);
             }
-            float mag = complex_mag(number)/numBlocks;
+            float mag = complex_mag(number);
             atomicAdd(&magnitudes[(i-startIndex)], mag);
         }
     }
+}
+
+
+__global__ void avgKernel(float*magnitudes, int blockSize, int numBlocks){
+  int tid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (tid< blockSize){
+    magnitudes[tid] = magnitudes[tid]/numBlocks;
+  }
 }
 
 void computeDFTBlocks(const Complex* h_input, float* h_magnitudes, int N, int k, int s) {
@@ -105,12 +113,14 @@ void computeDFTBlocks(const Complex* h_input, float* h_magnitudes, int N, int k,
 
     dftKernel<<<1024, 1024>>>(d_input, d_magnitudes, N, k, s, numBlocks);
     cudaDeviceSynchronize();
+    avgKernel<<<1024, 1024>>>(d_magnitudes, k, numBlocks);
+    cudaDeviceSynchronize();
+
 
     cudaMemcpy(h_magnitudes, d_magnitudes, k * sizeof(float), cudaMemcpyDeviceToHost);
     cudaFree(d_input);
     cudaFree(d_magnitudes);
 }
-
 
 
 void saveArrayToFile(const float* values, int numSamples, const std::string& filename) {
@@ -174,11 +184,11 @@ std::vector<float> readWav(const std::string& filePath, int &sampleRate) {
 
 int main(int argc, char *argv[]) {
     auto start = high_resolution_clock::now();
-    std::string filePath = argv[1];
-
+    std::string prefix = "../SoundFiles/";
+    std::string filePath = prefix+ argv[1];
+    std::cout << "Looking for file " << filePath << std::endl;
     int sampleRate;
     std::vector<float> samples = readWav(filePath, sampleRate);
-
     int N = samples.size();;  // Number of source file samples
     int k = 512;    // blocksize
     int s = 64;     // shift
@@ -224,16 +234,11 @@ int main(int argc, char *argv[]) {
         double frequency = i * sampleRate / k;
         printf("Frequency %f: Magnitude = %f\n", frequency, h_magnitudes[i]);
     }
-
     // Free host memory
     free(h_input);
     free(h_magnitudes);
-
-
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<microseconds>(stop - start);
     std::cout <<"GPU DFT took "<< duration.count()/1000 << "ms." << std::endl;
-
-
     return 0;
 }

@@ -18,8 +18,8 @@ def plot_samples(samples, title):
     plt.show()
 
 if __name__ == "__main__":
-    cpu_seq = read_samples('../Data/CPU_sequentiell_mac.txt')
-    cpu_par = read_samples('../Data/CPU_parallel_mac.txt')
+    cpu_seq = read_samples('../Data/CPU_sequentiell.txt')
+    cpu_par = read_samples('../Data/CPU_parallel.txt')
     cuda_par = read_samples('../Data/CUDA_FFT.txt')
 
     plot_samples(cpu_seq, "CPU Sequentiell")

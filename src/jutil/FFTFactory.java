@@ -56,7 +56,7 @@ public class FFTFactory {
 
 
         try {
-            WavFileFactory.writeFloatArrayToFile(magnitudes,"CPU_sequentiell_mac.txt");
+            WavFileFactory.writeFloatArrayToFile(magnitudes,"CPU_sequentiell.txt");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -111,7 +111,7 @@ public class FFTFactory {
         float[] magnitudes = new float[blockSize];
 
 
-        Complex[] windowed_input = hann_windpw(input);
+        //Complex[] windowed_input = hann_window(input);
 
 
         for (int blockIndex = 0; blockIndex < numBlocks; blockIndex++) {
@@ -119,7 +119,7 @@ public class FFTFactory {
             futures.add(
                     executor.submit(() -> {
                         Complex[] block = new Complex[blockSize];
-                        System.arraycopy(windowed_input, startIndex, block, 0, blockSize);
+                        System.arraycopy(input, startIndex, block, 0, blockSize);
                         return parallel_blockwise_dft_instance(block, numBlocks, startIndex, startIndex+blockSize);
                     }));
         }
@@ -137,7 +137,7 @@ public class FFTFactory {
         normalizeMagnitudes(magnitudes);
         // ausgabe
         try {
-            WavFileFactory.writeFloatArrayToFile( magnitudes,"CPU_parallel_mac.txt");
+            WavFileFactory.writeFloatArrayToFile( magnitudes,"CPU_parallel.txt");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -192,7 +192,7 @@ public class FFTFactory {
                 w = Complex.multiply(input[j], w);
                 number.add(w);
             }
-            float mag = Complex.magnitude(number); //TODO das hat hier eigentlich nichts verloren
+            float mag = Complex.magnitude(number);
             magnitudes[i] += mag;
         }
     }
