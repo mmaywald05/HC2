@@ -8,7 +8,6 @@
 #include <chrono>
 #include <thrust/complex.h>
 
-
 using namespace std::chrono;
 #define M_PI 3.14159265359
 
@@ -157,12 +156,9 @@ std::vector<float> readWav(const std::string& filePath, int &sampleRate) {
 
     int sampleCount = header.Subchunk2Size / sizeof(int16_t);
     sampleRate = header.SampleRate;
-
     sampleCount = header.Subchunk2Size / sizeof(int16_t);
     std::vector<int16_t> buffer(sampleCount);
-
     file.read(reinterpret_cast<char*>(buffer.data()), header.Subchunk2Size);
-
     file.close();
     std::vector<float> samples(buffer.size());
 
@@ -187,12 +183,16 @@ int main(int argc, char *argv[]) {
     std::string prefix = "../SoundFiles/";
     std::string filePath = prefix+ argv[1];
     std::cout << "Looking for file " << filePath << std::endl;
+
+
+    float threshold = 0.1;
     int sampleRate;
     std::vector<float> samples = readWav(filePath, sampleRate);
     int N = samples.size();;  // Number of source file samples
     int k = 512;    // blocksize
     int s = 64;     // shift
     int numBlocks = (N - k) / s + 1;
+
     Complex* h_input = (Complex*)malloc(N * sizeof(Complex));
     float* h_magnitudes = (float*)malloc(k * sizeof(float));
     // Initialize input data
@@ -207,22 +207,15 @@ int main(int argc, char *argv[]) {
     // Print the magnitudes of the frequency bins
     std::cout << "k = Blocksize = " << k << std::endl;
 
-
-
-
     float max = 0;
     float min = FLT_MAX;
-    int maxIndex = 0;
-    int minIndex = 0;
 
     for(int i = 0; i < k; ++i){
         h_magnitudes[i] = h_magnitudes[i] / numBlocks;
         if(h_magnitudes[i]  > max){
             max = h_magnitudes[i];
-            maxIndex = i;
         }
         if(h_magnitudes[i]< min ){
-            minIndex = i;
             min = h_magnitudes[i];
         }
     }
@@ -231,8 +224,9 @@ int main(int argc, char *argv[]) {
     }
     saveArrayToFile(h_magnitudes, k, "CUDA_FFT.txt");
     for(int i = 0; i < k; ++i){
-        double frequency = i * sampleRate / k;
-        printf("Frequency %f: Magnitude = %f\n", frequency, h_magnitudes[i]);
+        if(h_magnitudes[i] > threshold){
+                printf("Bin %d: Magnitude = %f\n", i, h_magnitudes[i]);
+        }
     }
     // Free host memory
     free(h_input);

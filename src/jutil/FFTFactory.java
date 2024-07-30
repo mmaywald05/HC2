@@ -1,8 +1,4 @@
 package jutil;
-
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.UnsupportedAudioFileException;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,48 +8,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class FFTFactory {
-    public static Complex[] loadSamplesAsComplex (String filePath){
-        try {
-            float[] samples = WavFileFactory.readWavFile(filePath);
-
-            Complex[] complex = new Complex[samples.length];
-            for (int i = 0; i < samples.length; i++) {
-                complex[i] = new Complex(samples[i], 0);
-            }
-            return complex;
-        } catch (UnsupportedAudioFileException | IOException e) {
-            System.out.println("Error reading file`?");
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    public static byte[] readAllBytes(AudioInputStream audioInputStream) throws IOException {
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        byte[] data = new byte[1024];
-        int bytesRead;
-
-        while ((bytesRead = audioInputStream.read(data, 0, data.length)) != -1) {
-            buffer.write(data, 0, bytesRead);
-        }
-        return buffer.toByteArray();
-    }
-
-
-
-
     public static void DFT_SEQ(String filePath, int blockSize, int shift, double threshold) {
-        Complex[] input = loadSamplesAsComplex(filePath);
+        Complex[] input = WavFileFactory.loadSamplesAsComplex(filePath);
         int N = input.length;
         float[] magnitudes = new float[blockSize];
         int numBlocks = (N - blockSize) / shift + 1 ;
 
-
-
         blockwise_DFT(input, magnitudes, blockSize, shift, numBlocks);
         average(magnitudes, numBlocks);
         normalizeMagnitudes(magnitudes);
-
 
         try {
             WavFileFactory.writeFloatArrayToFile(magnitudes,"CPU_sequentiell.txt");
@@ -61,30 +24,16 @@ public class FFTFactory {
             e.printStackTrace();
         }
         for (int i = 0; i < magnitudes.length; i++) {
-            System.out.println("Bin: " + i + " Magnitude = " + (magnitudes[i]));
-        }
-    }
-
-    private static void DFT(Complex[] input, float[] magnitudes, int N, int k, int s, int numBlocks){
-        for (int i= 0; i < input.length; i++) {
-            Complex number = new Complex(0, 0);
-            for (int j = 0; j < input.length; j++) {
-                double angle = 2 * Math.PI * i * j / input.length;
-                Complex w = new Complex((float) Math.cos(angle), (float) -Math.sin(angle));
-                Complex product = Complex.multiply(input[j], w);
-                number = Complex.add(number, product);
+            if(magnitudes[i] > threshold){
+                System.out.println("Bin: " + i + " Magnitude = " + (magnitudes[i]));
             }
-            float mag = Complex.magnitude(number);
-            magnitudes[i] += mag;
         }
     }
 
     private static void blockwise_DFT(Complex[] input, float[] magnitudes, int k, int s, int numBlocks){
-
         for (int blockId = 0; blockId < numBlocks; blockId++) {
             int startIndex = blockId * s;
             int endIndex = startIndex + k;
-
 
             for (int i = startIndex; i < endIndex; i++) {
                 Complex number = new Complex(0f, 0f);
@@ -101,7 +50,7 @@ public class FFTFactory {
     }
 
     public static void DFT_PAR(String filePath, int blockSize, int shift, double threshold) throws ExecutionException, InterruptedException {
-        Complex[] input = loadSamplesAsComplex(filePath);
+        Complex[] input = WavFileFactory.loadSamplesAsComplex(filePath);
         int N = input.length;
         int numBlocks = (N - blockSize) / shift +1;
 
@@ -109,10 +58,6 @@ public class FFTFactory {
         ExecutorService executor = Executors.newFixedThreadPool(numCores);
         List<Future<float[]>> futures = new ArrayList<>();
         float[] magnitudes = new float[blockSize];
-
-
-        //Complex[] windowed_input = hann_window(input);
-
 
         for (int blockIndex = 0; blockIndex < numBlocks; blockIndex++) {
             final int startIndex = blockIndex * shift;
@@ -142,25 +87,25 @@ public class FFTFactory {
             e.printStackTrace();
         }
         for (int i = 0; i < magnitudes.length; i++) {
-            System.out.println("Bin: " + i + " Magnitude = " + (magnitudes[i]));
+            if(magnitudes[i] > threshold){
+                System.out.println("Bin: " + i + " Magnitude = " + (magnitudes[i]));
+            }
         }
     }
 
-
+    /*
+    Funktioniert nicht wie erwartet
+     */
     public static Complex[] hann_windpw(Complex[] input){
         Complex[] windowed_input = new Complex[input.length];
-        float w = 0;
+        float w;
         float windowedSample;
-
 
         for (int i = 0; i < input.length; i++) {
             w = (float) (1 - Math.cos(2* Math.PI * i / input.length));
             windowedSample = w * input[i].x;
             windowed_input[i] = new Complex(windowedSample, 0);
-
         }
-
-
         return windowed_input;
     }
 
@@ -182,32 +127,15 @@ public class FFTFactory {
         return magnitudes;
     }
 
-    public static void dft(Complex[] input, float[] magnitudes){
-        int N = input.length;
-        for (int i = 0; i < N; i++) {
-            Complex number = new Complex(0f,0f);
-            for (int j = 0; j < N; j++) {
-                double angle = 2 * Math.PI * i * j / N;
-                Complex w = new Complex(Math.cos(angle), -Math.sin(angle));
-                w = Complex.multiply(input[j], w);
-                number.add(w);
-            }
-            float mag = Complex.magnitude(number);
-            magnitudes[i] += mag;
-        }
-    }
-
     public static void average(float[] magnitudes, int numBlocks){
         for (int i = 0; i < magnitudes.length; i++) {
             magnitudes[i] = magnitudes[i] / numBlocks;
         }
     }
 
-
     public static void normalizeMagnitudes(float[] magnitudes){
         float max = Float.MIN_VALUE;
         float min = Float.MAX_VALUE;
-
         for (int i = 0; i < magnitudes.length; i++) {
             if(magnitudes[i] < min)
                 min = magnitudes[i];
@@ -235,10 +163,8 @@ public class FFTFactory {
             this.x = (float) x;
             this.y = (float) y;
         }
-
         public float x(){ return this.x;}
         public float y(){return this.y;}
-
         public static Complex add(Complex a, Complex b){
             return new Complex(a.x + b.x, a.y + b.y);
         }
@@ -246,14 +172,12 @@ public class FFTFactory {
             this.x += c.x;
             this.y += c.y;
         }
-
         public static Complex multiply(Complex a, Complex b){
             return new Complex(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
         }
         public static float magnitude(Complex a){
             return (float) Math.sqrt(a.x * a.x + a.y * a.y);
         }
-
         @Override
         public String toString() {
             return x+"+i"+y;

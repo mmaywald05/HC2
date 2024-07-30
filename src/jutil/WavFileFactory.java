@@ -19,8 +19,6 @@ public class WavFileFactory {
         int numFrames = (int) (sampleRate * durationSec);
         byte[] audioData = new byte[numFrames * 2]; // 2 bytes per frame
 
-        // Frequency of the A440 tone
-
         double amplitude = 32767.0; // Max amplitude for 16-bit audio
         double twoPiF = 2 * Math.PI * frequency;
 
@@ -56,8 +54,6 @@ public class WavFileFactory {
         if (format.getEncoding() != AudioFormat.Encoding.PCM_SIGNED) {
             throw new UnsupportedAudioFileException("Only PCM_SIGNED encoding is supported.");
         }
-
-        int numChannels = format.getChannels();
         int bytesPerSample = format.getSampleSizeInBits() / 8;
         int frameSize = format.getFrameSize();
         int bufferSize = 1024 * frameSize; // arbitrary buffer size
@@ -94,15 +90,19 @@ public class WavFileFactory {
         return samples;
     }
 
-
-    public static void main(String[] args) {
-        WavFileFactory.createMonotoneWav("monotone", 1, 210);
-        WavFileFactory.createMonotoneWav("monotone", 10, 210);
-        WavFileFactory.createMonotoneWav("monotone", 30, 210);
-        WavFileFactory.createMonotoneWav("monotone", 60, 210);
-        WavFileFactory.createMonotoneWav("monotone", 150, 210);
-        WavFileFactory.createMonotoneWav("monotone", 300, 210);
-
+    public static FFTFactory.Complex[] loadSamplesAsComplex (String filePath){
+        try {
+            float[] samples = WavFileFactory.readWavFile(filePath);
+            FFTFactory.Complex[] complex = new FFTFactory.Complex[samples.length];
+            for (int i = 0; i < samples.length; i++) {
+                complex[i] = new FFTFactory.Complex(samples[i], 0);
+            }
+            return complex;
+        } catch (UnsupportedAudioFileException | IOException e) {
+            System.out.println("Error reading file`?");
+            e.printStackTrace();
+            return null;
+        }
     }
 
     public static void writeFloatArrayToFile(float[] floatArray, String fileName) throws IOException {
@@ -115,5 +115,13 @@ public class WavFileFactory {
         }
     }
 
+    public static void main(String[] args) {
+        WavFileFactory.createMonotoneWav("monotone", 1, 210);
+        WavFileFactory.createMonotoneWav("monotone", 10, 210);
+        WavFileFactory.createMonotoneWav("monotone", 30, 210);
+        WavFileFactory.createMonotoneWav("monotone", 60, 210);
+        WavFileFactory.createMonotoneWav("monotone", 150, 210);
+        WavFileFactory.createMonotoneWav("monotone", 300, 210);
+    }
 }
 
